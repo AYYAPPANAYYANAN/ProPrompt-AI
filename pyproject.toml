@@ -1,0 +1,18 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "propromptai"  # Change this if you want a different name on PyPI
+version = "2.0.0"
+description = "An autonomous AI coding agent and system assistant powered by Groq."
+readme = "README.md"
+authors = [{name = "Ayyappan Ayyanan"}]
+dependencies = [
+    "typer",
+    "rich",
+    "groq"
+]
+
+[project.scripts]
+p = "propromptai:app" # This lets people just type 'p' instead of 'mytool'

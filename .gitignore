@@ -1,0 +1,9 @@
+@'
+__pycache__/
+dist/
+build/
+*.egg-info/
+.my_ai_db.json
+.pypirc
+.env
+'@ | Out-File -FilePath .gitignore -Encoding utf8
