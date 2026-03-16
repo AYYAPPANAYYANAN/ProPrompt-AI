@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "propromptai"  # Change this if you want a different name on PyPI
-version = "2.0.1"
+version = "2.1.0"
 description = "An autonomous AI coding agent and system assistant powered by Groq."
 readme = "README.md"
 authors = [{name = "Ayyappan Ayyanan"}]
