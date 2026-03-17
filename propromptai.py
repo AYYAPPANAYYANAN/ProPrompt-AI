@@ -1,4 +1,3 @@
-code 
 import typer
 import sys
 import os
@@ -16,7 +15,7 @@ except ImportError:
     print("Please run: pip install groq")
     sys.exit(1)
 
-__version__ = "1.0.0"
+__version__ = "4.0.1"
 
 app = typer.Typer(add_completion=False, invoke_without_command=True)
 console = Console()
@@ -32,37 +31,49 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-def generate_ai_code(prompt: str, api_key: str):
-    """Sends the user's idea to Groq and gets pure Python code back instantly."""
+def generate_ultra_project(prompt: str, api_key: str, error_feedback: str = ""):
+    """Uses Groq to architect a massive, multi-file enterprise system with UI/UX focus."""
     client = Groq(api_key=api_key)
     
+    # THE "ULTRA" SYSTEM PROMPT
     system_prompt = (
-        "You are an expert Python developer. Write a complete, working Python script for the user's request. "
-        "Return ONLY the raw python code. Do not include markdown formatting like ```python, do not explain the code. "
-        "Just the raw code starting with imports."
+        "You are a Staff-Level Software Engineer and an Expert UI/UX Designer. "
+        "Your job is to build massive, highly polished, production-ready applications. "
+        "CRITICAL INSTRUCTIONS: "
+        "1. DO NOT write short, basic scripts. You MUST write extensive, exhaustive code. "
+        "2. DO NOT use placeholders like '# logic goes here'. Write every single line of the logic. "
+        "3. Focus heavily on UI/UX. Use advanced frontend frameworks (like Streamlit or FastAPI). "
+        "   If using Streamlit, inject custom CSS, use columns, metrics, tabs, interactive charts, and animations. "
+        "4. Structure the app across multiple files for deep modularity. "
+        "5. Output ONLY a valid JSON object mapping relative file paths to complete code strings. "
+        "Example: {'app.py': '...', 'components/ui.py': '...', 'database/models.py': '...', 'requirements.txt': '...'}. "
+        "Do not include markdown explanations outside the JSON."
     )
     
+    user_content = f"Enterprise Project Requirement: {prompt}"
+    
+    if error_feedback:
+        user_content += f"\n\nCRITICAL FIX REQUIRED. The previous code crashed with this error:\n{error_feedback}\nRewrite the necessary JSON files to fix this perfectly."
+
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile", # Excellent, fast model for coding
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": user_content}
         ],
-        temperature=0.1, # Keep temperature low for reliable code
-        max_tokens=2048
+        temperature=0.3, 
+        max_tokens=8000, # Maxed out token limit for massive code generation
+        response_format={"type": "json_object"}
     )
     
-    code = completion.choices[0].message.content.strip()
+    raw_content = completion.choices[0].message.content.strip()
     
-    # Clean up any accidental markdown the AI might slip in
-    if code.startswith("```python"):
-        code = code[9:]
-    if code.startswith("```"):
-        code = code[3:]
-    if code.endswith("```"):
-        code = code[:-3]
-        
-    return code.strip()
+    # The Regex JSON Cleaner (Bulletproof against Markdown crashes)
+    json_match = re.search(r'\{.*\}', raw_content, re.DOTALL)
+    if json_match:
+        return json.loads(json_match.group(0))
+    else:
+        return json.loads(raw_content)
 
 def process_natural_language(prompt: str):
     cmd = prompt.lower()
@@ -73,71 +84,67 @@ def process_natural_language(prompt: str):
         key = prompt.split("key")[-1].strip()
         db["groq_api_key"] = key
         save_db(db)
-        console.print("[bold green]✔ Groq API Key saved securely to your local database![/bold green]")
+        console.print("[bold green]✔ Groq API Key saved securely![/bold green]")
         return
 
-    # ACTION 1: The Autonomous AI Coder
-    if cmd.startswith("code ") or cmd.startswith("build a project "):
+    # ACTION 1: The Autonomous Enterprise Architect
+    if cmd.startswith("code ") or cmd.startswith("build "):
         if not db.get("groq_api_key"):
-            console.print("[bold red]Missing Groq API Key![/bold red] Run: [yellow]mytool set groq key YOUR_KEY_HERE[/yellow]")
+            console.print("[bold red]Missing API Key![/bold red]")
             return
             
-        console.print("[bold blue]⚡ Groq LPU is thinking and writing your code...[/bold blue]")
+        project_name = "ultra_project_" + str(len(db["tasks"]) + 1)
+        last_error = ""
         
-        try:
-            # Generate the code using Groq
-            generated_code = generate_ai_code(prompt, db["groq_api_key"])
+        for attempt in range(1, 4):
+            console.print(f"[bold magenta]⚡ Attempt {attempt}: Architecting Ultra System with UI/UX...[/bold magenta]")
             
-            folder_name = "ai_project_" + str(len(db["tasks"]) + 1)
-            os.makedirs(folder_name, exist_ok=True)
-            
-            file_path = os.path.join(folder_name, "main.py")
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(generated_code)
+            try:
+                # Generates the massive JSON structure
+                project_files = generate_ultra_project(prompt, db["groq_api_key"], last_error)
                 
-            console.print(Panel(f"Code saved to: [cyan]{os.path.abspath(file_path)}[/cyan]", title="✔ Project Built", border_style="green"))
-            console.print("[bold yellow]🚀 Running your new AI project now...[/bold yellow]\n")
-            
-            # Execute the generated code!
-            result = subprocess.run([sys.executable, file_path], capture_output=True, text=True)
-            
-            # --- THE AUTO-HEALING LOGIC ---
-            if result.returncode != 0 and "ModuleNotFoundError" in result.stderr:
-                # Find out which library is missing
-                missing_module = re.search(r"No module named '(.+?)'", result.stderr)
-                if missing_module:
-                    mod_name = missing_module.group(1)
-                    console.print(f"[bold magenta]📦 Missing library detected: '{mod_name}'. Auto-installing now...[/bold magenta]")
+                # Builds the physical files
+                for file_path, file_code in project_files.items():
+                    full_path = Path(project_name) / file_path
+                    full_path.parent.mkdir(parents=True, exist_ok=True)
+                    full_path.write_text(file_code, encoding="utf-8")
                     
-                    # Command the system to install it silently
-                    subprocess.run([sys.executable, "-m", "pip", "install", mod_name, "--quiet"])
-                    console.print(f"[bold green]✔ Installed {mod_name}! Restarting Agent...[/bold green]\n")
-                    
-                    # Try running the code one more time
-                    result = subprocess.run([sys.executable, file_path], capture_output=True, text=True)
-
-            # Final Output Evaluation
-            if result.returncode == 0:
-                console.print(Panel(result.stdout, title="Terminal Output", border_style="green"))
-            else:
-                console.print(Panel(result.stderr, title="Code Execution Error", border_style="red"))
+                console.print(f"[green]✔ Multi-file architecture built in: {project_name}[/green]")
                 
-        except Exception as e:
-            console.print(f"[bold red]Agent crashed:[/bold red] {str(e)}")
+                # Installs dependencies
+                req_file = Path(project_name) / "requirements.txt"
+                if req_file.exists():
+                    console.print("[dim]📦 Installing heavy dependencies...[/dim]")
+                    subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(req_file), "--quiet"])
 
-    # ACTION 2: Simple File/Folder Creation
-    file_match = re.search(r"(?:create|make)\s+(?:a\s+)?(?:file|folder|directory)\s+(?:named\s+)?(.+)", prompt)
-    if file_match and "project" not in cmd:
-        name = file_match.group(1).strip()
-        if "folder" in cmd or "directory" in cmd:
-            os.makedirs(name, exist_ok=True)
-            console.print(f"[green]✔ Created Folder:[/green] {name}")
-        else:
-            with open(name, "w") as f: f.write("")
-            console.print(f"[green]✔ Created File:[/green] {name}")
+                # Finds the main file
+                entry = "app.py" if "app.py" in project_files else ("main.py" if "main.py" in project_files else list(project_files.keys())[0])
+                entry_path = Path(project_name) / entry
+                
+                # Windows Streamlit Fix: Uses sys.executable -m to avoid path errors
+                if "streamlit" in open(entry_path, encoding="utf-8").read().lower():
+                    console.print(f"[bold yellow]🚀 Launching High-End Streamlit UI...[/bold yellow]\n")
+                    subprocess.run([sys.executable, "-m", "streamlit", "run", str(entry_path)])
+                    return
+                else:
+                    console.print(f"[bold yellow]🚀 Running backend service...[/bold yellow]\n")
+                    result = subprocess.run([sys.executable, str(entry_path)], capture_output=True, text=True)
+
+                    if result.returncode == 0:
+                        console.print(Panel(result.stdout, title="✔ Success Output", border_style="green"))
+                        return 
+                    else:
+                        last_error = result.stderr
+                        console.print(Panel(last_error, title="❌ Error Detected (Auto-fixing)", border_style="red"))
+                    
+            except Exception as e:
+                last_error = str(e)
+                console.print(f"[bold red]System Crash:[/bold red] {last_error}")
+
+        console.print("[bold red]❌ Exhausted auto-fix attempts. Check the code manually.[/bold red]")
         return
 
-    # ACTION 3: Memory & Tasks
+    # ACTION 2: Memory & Simple Files
     if any(word in cmd for word in ["remember", "add", "note", "show", "list"]):
         if "show" in cmd or "list" in cmd:
             if not db["tasks"]:
@@ -154,13 +161,13 @@ def process_natural_language(prompt: str):
             console.print(f"[cyan]✔ Saved:[/cyan] {task}")
         return
 
-    console.print(f"[yellow]I heard:[/yellow] {prompt}\n[cyan]Try: 'code a python script that prints the fibonacci sequence'[/cyan]")
+    console.print(f"[yellow]I heard:[/yellow] {prompt}")
 
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context, words: list[str] = typer.Argument(None)):
     if ctx.invoked_subcommand is not None: return
     if not words:
-        console.print("[bold blue]AI CLI is active.[/bold blue]")
+        console.print("[bold blue]Ultra Architect Active.[/bold blue]")
         return
     process_natural_language(" ".join(words))
 
