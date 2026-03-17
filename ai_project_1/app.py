@@ -2,56 +2,27 @@
 import streamlit as st
 import cv2
 import numpy as np
-from processor import process_image
-from detector import detect_image
-import logging
+from PIL import Image
+import processor
 
-# Set up logging
-logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+st.title('AI Image Analysis Tool')
+st.subheader('Upload an image file')
+uploaded_file = st.file_uploader('Choose a file')
 
-# Custom CSS for Cyber theme
-st.markdown(
-    """
-    <style>
-    /* Remove the footer */
-    footer {visibility: hidden;}
-    /* Remove the main menu */
-    .main-menu {visibility: hidden;}
-    /* Set the background color */
-    .block-container {background-color: #2f2f2f;}
-    /* Set the text color */
-    .css-1kyx76e {color: #ffffff;}
-    /* Set the button color */
-    .css-1cpxqw2 {background-color: #4CAF50;}
-    </style>
-    "",
-    unsafe_allow_html=True
-)
+if uploaded_file is not None:
+    file_details = {
+        'filename': uploaded_file.name,
+        'filetype': uploaded_file.type,
+        'filesize': uploaded_file.size
+    }
+    st.write(file_details)
 
-# Set up the Streamlit UI
-st.title('AI Image Detector')
-st.subheader('Upload an image to detect objects')
-
-# Create a file uploader
-uploaded_image = st.file_uploader('Choose an image', type=['jpg', 'png', 'jpeg'])
-
-if uploaded_image is not None:
     try:
-        # Process the image
-        processed_image = process_image(uploaded_image)
-        
-        # Detect objects in the image
-        detection_result = detect_image(processed_image)
-        
-        # Display the detection result
-        st.write(detection_result)
-        
-        # Display the processed image
-        st.image(processed_image)
-        
-        # Log the successful detection
-        logging.info('Image detection successful')
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Image', use_column_width=True)
+        ela_result = processor.error_level_analysis(uploaded_file)
+        st.write('Error Level Analysis Result:')
+        st.write(ela_result)
     except Exception as e:
-        # Log the error
-        logging.error(f'Error detecting image: {e}')
-        st.error('Error detecting image')
+        st.error('Error occurred while processing the image')
+        st.write(str(e))
