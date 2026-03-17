@@ -1,6 +1,7 @@
 
 import streamlit as st
-import streamlit.components.v1 as components
+import cv2
+import numpy as np
 from processor import process_image
 from detector import detect_image
 import logging
@@ -17,31 +18,40 @@ st.markdown(
     /* Remove the main menu */
     .main-menu {visibility: hidden;}
     /* Set the background color */
-    .block-container {background-color: #2f4f7f;}
+    .block-container {background-color: #2f2f2f;}
     /* Set the text color */
     .css-1kyx76e {color: #ffffff;}
     /* Set the button color */
-    .css-1ka88d4 {background-color: #4CAF50;}
-    /* Set the button hover color */
-    .css-1ka88d4:hover {background-color: #3e8e41;}
+    .css-1cpxqw2 {background-color: #4CAF50;}
     </style>
     "",
     unsafe_allow_html=True
 )
 
-# Create a Streamlit app
-def main():
-    try:
-        st.title('AI Image Detector')
-        st.subheader('Upload an image to detect objects')
-        image_file = st.file_uploader('Upload an image', type=['jpg', 'png', 'jpeg'])
-        if image_file is not None:
-            image = process_image(image_file)
-            detection_result = detect_image(image)
-            st.write(detection_result)
-    except Exception as e:
-        logging.error(f'Error in app.py: {e}')
-        st.error('An error occurred. Please try again.')
+# Set up the Streamlit UI
+st.title('AI Image Detector')
+st.subheader('Upload an image to detect objects')
 
-if __name__ == '__main__':
-    main()
+# Create a file uploader
+uploaded_image = st.file_uploader('Choose an image', type=['jpg', 'png', 'jpeg'])
+
+if uploaded_image is not None:
+    try:
+        # Process the image
+        processed_image = process_image(uploaded_image)
+        
+        # Detect objects in the image
+        detection_result = detect_image(processed_image)
+        
+        # Display the detection result
+        st.write(detection_result)
+        
+        # Display the processed image
+        st.image(processed_image)
+        
+        # Log the successful detection
+        logging.info('Image detection successful')
+    except Exception as e:
+        # Log the error
+        logging.error(f'Error detecting image: {e}')
+        st.error('Error detecting image')

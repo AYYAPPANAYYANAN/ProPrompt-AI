@@ -15,7 +15,7 @@ except ImportError:
     print("Please run: pip install groq")
     sys.exit(1)
 
-__version__ = "5.0.0"
+__version__ = "6.0.0"
 
 app = typer.Typer(add_completion=False, invoke_without_command=True)
 console = Console()
@@ -31,26 +31,24 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-def generate_ai_studio_project(prompt: str, api_key: str, error_feedback: str = ""):
-    """Google AI Studio level generation with strict JSON safety."""
+def generate_flawless_project(prompt: str, api_key: str, error_feedback: str = ""):
+    """Zero-Tolerance Code Generation for perfect 1st attempts."""
     client = Groq(api_key=api_key)
     
+    # THE ZERO-TOLERANCE PROMPT
     system_prompt = (
-        "You are an elite 'AI Studio' System Architect. Your job is to generate full, working applications, "
-        "entire websites, and massive SaaS platforms from a single prompt. "
-        "CRITICAL JSON & PYTHON RULES: "
-        "1. NEVER USE TRIPLE QUOTES (\"\"\" or ''') inside the Python code. This breaks JSON parsing. Use standard single or double quotes with \\n for newlines. "
-        "2. Ensure all strings inside the code are properly escaped to maintain valid JSON. "
-        "3. DO NOT write short scripts. Write extensive, exhaustive, production-ready code exceeding hundreds of lines per file. "
-        "4. NO placeholders like '# implementation here'. Write every single line of logic. "
-        "5. Output ONLY a valid JSON object mapping relative file paths to complete code strings. "
-        "Example: {'app.py': '...', 'components/ui.py': '...', 'requirements.txt': '...'}"
+        "You are an elite Principal AI Architect. You must generate flawless, production-ready, multi-file software.\n"
+        "ZERO-TOLERANCE RULES:\n"
+        "1. NO PLACEHOLDERS: You are strictly forbidden from using '# TODO', 'pass', or '# implement logic here'. You MUST write the actual, complete mathematical and programmatic logic for every single function.\n"
+        "2. NO HALLUCINATIONS: Only use official, stable methods for libraries like pandas, sklearn, and streamlit. Ensure exactly that all file imports match across your generated files (e.g., if you import from 'data_engine.py', that file must exist in your JSON).\n"
+        "3. EXTREME DENSITY: Write exhaustive, complex code with deep error handling (try/except blocks), logging, and advanced UI/UX. Files must be highly detailed.\n"
+        "4. JSON STRICTNESS: NEVER use Python triple quotes. Escape all strings. Output ONLY a valid JSON object mapping relative file paths to complete code strings. Do not add markdown outside the JSON."
     )
     
-    user_content = f"AI Studio Project Requirement: {prompt}"
+    user_content = f"Project Requirement: {prompt}"
     
     if error_feedback:
-        user_content += f"\n\nCRITICAL FIX REQUIRED. The previous attempt crashed:\n{error_feedback}\nRewrite the JSON to fix this perfectly. REMEMBER: DO NOT use triple quotes."
+        user_content += f"\n\nCRITICAL FIX: The code failed with:\n{error_feedback}\nFix the logic and imports perfectly. No triple quotes."
 
     completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -58,7 +56,7 @@ def generate_ai_studio_project(prompt: str, api_key: str, error_feedback: str = 
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content}
         ],
-        temperature=0.3, 
+        temperature=0.1, # Extremely low temperature to prevent hallucinations
         max_tokens=8000, 
         response_format={"type": "json_object"}
     )
@@ -74,7 +72,6 @@ def process_natural_language(prompt: str):
     cmd = prompt.lower()
     db = load_db()
 
-    # ACTION 0: Setup Groq API Key
     if "set groq key" in cmd or "set api key" in cmd:
         key = prompt.split("key")[-1].strip()
         db["groq_api_key"] = key
@@ -82,29 +79,27 @@ def process_natural_language(prompt: str):
         console.print("[bold green]✔ Groq API Key saved securely![/bold green]")
         return
 
-    # ACTION 1: The AI Studio Auto-Builder
     if cmd.startswith("code ") or cmd.startswith("build "):
         if not db.get("groq_api_key"):
             console.print("[bold red]Missing API Key![/bold red]")
             return
             
-        project_name = "ai_studio_build_" + str(len(db["tasks"]) + 1)
+        project_name = "flawless_build_" + str(len(db["tasks"]) + 1)
         last_error = ""
         
-        # EXTENDED RETRY LOOP (15 Attempts for maximum auto-healing)
         max_attempts = 15
         for attempt in range(1, max_attempts + 1):
-            console.print(f"[bold magenta]⚡ Attempt {attempt}/{max_attempts}: AI Studio is architecting...[/bold magenta]")
+            console.print(f"[bold magenta]⚡ Attempt {attempt}/{max_attempts}: Engineering flawless code...[/bold magenta]")
             
             try:
-                project_files = generate_ai_studio_project(prompt, db["groq_api_key"], last_error)
+                project_files = generate_flawless_project(prompt, db["groq_api_key"], last_error)
                 
                 for file_path, file_code in project_files.items():
                     full_path = Path(project_name) / file_path
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_text(file_code, encoding="utf-8")
                     
-                console.print(f"[green]✔ Website/App built in: {project_name}[/green]")
+                console.print(f"[green]✔ Architecture built in: {project_name}[/green]")
                 
                 req_file = Path(project_name) / "requirements.txt"
                 if req_file.exists():
@@ -115,7 +110,7 @@ def process_natural_language(prompt: str):
                 entry_path = Path(project_name) / entry
                 
                 if "streamlit" in open(entry_path, encoding="utf-8").read().lower():
-                    console.print(f"[bold yellow]🚀 Launching AI Studio Web App...[/bold yellow]\n")
+                    console.print(f"[bold yellow]🚀 Launching Flawless Web App...[/bold yellow]\n")
                     subprocess.run([sys.executable, "-m", "streamlit", "run", str(entry_path)])
                     return
                 else:
@@ -133,10 +128,9 @@ def process_natural_language(prompt: str):
                 last_error = str(e)
                 console.print(f"[bold red]System Crash:[/bold red] {last_error}")
 
-        console.print(f"[bold red]❌ Exhausted {max_attempts} attempts. Check the code manually.[/bold red]")
+        console.print(f"[bold red]❌ Exhausted {max_attempts} attempts.[/bold red]")
         return
 
-    # ACTION 2: Memory
     if any(word in cmd for word in ["remember", "add", "note", "show", "list"]):
         if "show" in cmd or "list" in cmd:
             if not db["tasks"]:
@@ -159,7 +153,7 @@ def process_natural_language(prompt: str):
 def main(ctx: typer.Context, words: list[str] = typer.Argument(None)):
     if ctx.invoked_subcommand is not None: return
     if not words:
-        console.print("[bold blue]AI Studio Architect Active.[/bold blue]")
+        console.print("[bold blue]Zero-Tolerance Architect Active.[/bold blue]")
         return
     process_natural_language(" ".join(words))
 
